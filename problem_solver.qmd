@@ -1,0 +1,72 @@
+---
+title: "Buscador del Mejor Punto de Reunión"
+format: html
+filters:
+  - shinylive
+---
+
+Calculadora interactiva usando el algoritmo de Weiszfeld.
+
+```{shinylive-r}
+#| standalone: true
+#| viewerHeight: 600
+
+library(shiny)
+
+# Implementación de Weiszfeld en R puro (Recomendado para Shinylive)
+weiszfeld <- function(X, tol = 1e-7, maxiter = 1000) {
+  y <- colMeans(X) # Punto de inicio inicial (centroide)
+  
+  for(i in 1:maxiter) {
+    # Distancia euclidiana de y a cada punto en X
+    d <- sqrt(rowSums((sweep(X, 2, y))^2))
+    d[d < 1e-10] <- 1e-10 # Evitar división por cero
+    
+    W <- 1 / d
+    y_new <- colSums(X * W) / sum(W)
+    
+    if(sqrt(sum((y_new - y)^2)) < tol) break
+    y <- y_new
+  }
+  return(y)
+}
+
+# Interfaz de usuario de Shiny
+ui <- fluidPage(
+  titlePanel("Punto de Reunión Óptimo"),
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Introduce las coordenadas (ej. 0,0 y 4,4)"),
+      textAreaInput("coords", "Coordenadas (x,y por línea):", "0,0\n4,4\n2,8"),
+      actionButton("calc", "Calcular")
+    ),
+    mainPanel(
+      plotOutput("grafico_puntos")
+    )
+  )
+)
+
+# Lógica del servidor
+server <- function(input, output, session) {
+  puntos <- eventReactive(input$calc, {
+    # Convertir el texto a matriz numérica
+    lineas <- strsplit(input$coords, "\n")[[1]]
+    matriz <- t(sapply(lineas, function(x) as.numeric(strsplit(x, ",")[[1]])))
+    return(unname(matriz))
+  }, ignoreNULL = FALSE)
+  
+  output$grafico_puntos <- renderPlot({
+    X <- puntos()
+    pto_reunion <- weiszfeld(X)
+    
+    plot(X, pch = 19, col = "blue", xlim = c(min(X[,1])-2, max(X[,1])+2), 
+         ylim = c(min(X[,2])-2, max(X[,2])+2), xlab = "X", ylab = "Y",
+         main = "Mediana Geométrica (Fermat-Weber)")
+    points(pto_reunion[1], pto_reunion[2], pch = 8, col = "red", cex = 2, lwd = 2)
+    legend("topright", legend=c("Personas", "Punto de Reunión"), 
+           col=c("blue", "red"), pch=c(19, 8))
+  })
+}
+
+shinyApp(ui, server)
+```
