@@ -1,6 +1,8 @@
 ---
 title: "Buscador del Mejor Punto de Reunión"
-format: html
+format: 
+  html:
+    embed-resources: false
 filters:
   - shinylive
 ---
@@ -10,6 +12,7 @@ Calculadora interactiva usando el algoritmo de Weiszfeld.
 ```{shinylive-r}
 #| standalone: true
 #| viewerHeight: 600
+#| components: [viewer]
 
 library(shiny)
 
